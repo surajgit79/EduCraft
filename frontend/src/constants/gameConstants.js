@@ -1,0 +1,9 @@
+export const GAME_CONFIG = {
+  MAX_HP: 100,
+  HEAL_AMOUNT: 10,
+  DAMAGE_WRONG: 20,
+  DAMAGE_TIMEOUT: 25,
+  QUESTION_TIMER: 30,
+  XP_PER_LEVEL: 100,
+  XP_REWARDS: { easy: 10, medium: 15, hard: 20 }
+}
