@@ -58,6 +58,7 @@ export default function QuestionModal() {
 
   const fetchQuestion = async () => {
     setLoading(true)
+    console.log('[DEBUG] Fetching question with sessionData:', sessionData, 'entity:', currentEntity)
     try {
       const response = await fetch('/api/generate-question', {
         method: 'POST',
@@ -67,6 +68,8 @@ export default function QuestionModal() {
           grade: sessionData?.grade || '5',
           difficulty,
           interaction_type: currentEntity?.type || 'enemy',
+          entity_id: currentEntity?.entityId || '',
+          entity_name: currentEntity?.name || '',
           weak_topics: weakTopics,
           syllabus_id: sessionData?.syllabusId || null,
           chapter_id: sessionData?.chapterId || null,
@@ -77,6 +80,7 @@ export default function QuestionModal() {
       })
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
       const data = await response.json()
+      console.log('[DEBUG] Received question:', data)
       setCurrentQuestion(data)
       
       if (currentEntity?.entityId && !attemptedEntities.includes(currentEntity.entityId)) {

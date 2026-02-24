@@ -193,17 +193,21 @@ def generate_question():
     grade = data.get('grade', '5')
     difficulty = data.get('difficulty', 'medium')
     interaction_type = data.get('interaction_type', 'enemy')
+    entity_id = data.get('entity_id', '')
+    entity_name = data.get('entity_name', '')
     weak_topics = data.get('weak_topics', [])
     chapter_content = data.get('chapter_content', '')
     syllabus_id = data.get('syllabus_id')
     chapter_id = data.get('chapter_id')
     user_id = data.get('user_id', 'anonymous')
     
-    # Create unique key for tracking question history - include subject for uniqueness
+    print(f"[DEBUG] Generating question for subject={subject}, grade={grade}, entity={entity_name}")
+    
+    # Create unique key - include entity so each gets different question
     if syllabus_id and chapter_id:
-        user_key = f"{user_id}_{syllabus_id}_ch{chapter_id}"
+        user_key = f"{user_id}_{syllabus_id}_ch{chapter_id}_{entity_id}"
     else:
-        user_key = f"{user_id}_{subject}_grade{grade}_{interaction_type}"
+        user_key = f"{user_id}_{subject}_grade{grade}_{entity_id}"
     
     if user_key not in question_history:
         question_history[user_key] = []
@@ -222,11 +226,15 @@ Return ONLY valid JSON: {{ "question": "string", "options": ["option1", "option2
 Make it completely different from any question you've generated before."""
         else:
             # For non-syllabus mode, generate subject-specific questions
-            prompt = f"""You are an educational game master. Generate a unique {difficulty} level {subject} question for grade {grade} students. 
-This is a {interaction_type} interaction - {'battle against an enemy' if interaction_type == 'enemy' else 'collecting a resource' if interaction_type == 'resource' else 'completing a quest'}.
-IMPORTANT: Make this question specifically about {subject} - NOT any other subject.
-Make it COMPLETELY DIFFERENT from previous ones.
-Prioritize these weak topics if relevant: {weak_topics_str}.
+            interaction_desc = {
+                'enemy': 'battle against an enemy',
+                'resource': 'collect a resource', 
+                'npc': 'complete a quest'
+            }.get(interaction_type, 'game interaction')
+            
+            prompt = f"""You are a {subject} expert teacher. Create a {difficulty} level question about {subject} for grade {grade} students.
+This is a {interaction_desc} with the {entity_name} character.
+The question must be about {subject} - NOT math, NOT any other subject.
 Return ONLY valid JSON: {{ "question": "string", "options": ["option1", "option2", "option3", "option4"], "correct_index": 0-3, "explanation": "string" }}"""
 
         try:
@@ -242,19 +250,24 @@ Return ONLY valid JSON: {{ "question": "string", "options": ["option1", "option2
             if json_start >= 0 and json_end > json_start:
                 question_data = json.loads(content[json_start:json_end])
             else:
+                print(f"[DEBUG] No valid JSON found in response, using default")
                 question_data = get_default_question(subject, difficulty)
             
             q_hash = get_question_hash(question_data.get('question', ''), question_data.get('options', []))
             
             if q_hash not in used_hashes:
                 question_history[user_key].append(q_hash)
+                print(f"[DEBUG] Returning question: {question_data.get('question', '')[:50]}...")
                 return jsonify(question_data)
+            else:
+                print(f"[DEBUG] Question already used, trying again")
             
         except Exception as e:
-            print(f"Error generating question: {e}")
+            print(f"[ERROR] Error generating question: {e}")
             return jsonify(get_default_question(subject, difficulty))
     
     # If all attempts failed to generate unique question, clear history and try again
+    print(f"[DEBUG] All attempts failed, using default for {subject}")
     question_history[user_key] = []
     return jsonify(get_default_question(subject, difficulty))
 
@@ -485,6 +498,66 @@ def get_default_question(subject, difficulty):
                 "options": ["CO2", "H2O", "NaCl", "O2"],
                 "correct_index": 1,
                 "explanation": "Water is H2O - two hydrogen atoms and one oxygen"
+            }
+        },
+        'History': {
+            'easy': {
+                "question": "In which year did World War II end?",
+                "options": ["1943", "1944", "1945", "1946"],
+                "correct_index": 2,
+                "explanation": "World War II ended in 1945"
+            },
+            'medium': {
+                "question": "Who was the first President of the United States?",
+                "options": ["Thomas Jefferson", "John Adams", "George Washington", "Benjamin Franklin"],
+                "correct_index": 2,
+                "explanation": "George Washington was the first US President"
+            },
+            'hard': {
+                "question": "The Treaty of Versailles was signed to end which war?",
+                "options": ["World War I", "World War II", "The Napoleonic Wars", "The Crimean War"],
+                "correct_index": 0,
+                "explanation": "The Treaty of Versailles ended World War I in 1919"
+            }
+        },
+        'Geography': {
+            'easy': {
+                "question": "What is the largest continent on Earth?",
+                "options": ["Africa", "North America", "Asia", "Europe"],
+                "correct_index": 2,
+                "explanation": "Asia is the largest continent"
+            },
+            'medium': {
+                "question": "Which river is the longest in the world?",
+                "options": ["Amazon", "Nile", "Mississippi", "Yangtze"],
+                "correct_index": 1,
+                "explanation": "The Nile is the longest river at about 6,650 km"
+            },
+            'hard': {
+                "question": "What is the capital of Australia?",
+                "options": ["Sydney", "Melbourne", "Canberra", "Perth"],
+                "correct_index": 2,
+                "explanation": "Canberra is the capital of Australia"
+            }
+        },
+        'English': {
+            'easy': {
+                "question": "What is the past tense of 'run'?",
+                "options": ["runned", "ran", "running", "runs"],
+                "correct_index": 1,
+                "explanation": "'Ran' is the past tense of 'run'"
+            },
+            'medium': {
+                "question": "Which is a synonym of 'happy'?",
+                "options": ["sad", "joyful", "angry", "tired"],
+                "correct_index": 1,
+                "explanation": "'Joyful' is a synonym of 'happy'"
+            },
+            'hard': {
+                "question": "Identify the noun in: 'The quick brown fox jumps'",
+                "options": ["quick", "fox", "jumps", "the"],
+                "correct_index": 1,
+                "explanation": "'Fox' is the noun in this sentence"
             }
         }
     }

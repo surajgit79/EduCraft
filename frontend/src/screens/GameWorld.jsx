@@ -327,13 +327,13 @@ function TeacherNPC({ position, onInteract, colors, isCompleted }) {
   )
 }
 
-function GameScene({ subject, worldData, onEntityInteract, completedEntities }) {
+function GameScene({ subject, worldData, onEntityInteract, completedEntities, chapterPrefix = 'default' }) {
   const colors = subjectColors[subject] || subjectColors.Math
   
   const enemies = worldData?.enemies || ['Math Monster', 'Number Ninja', 'Equation Dragon']
   const resources = worldData?.resources || ['Gold Block', 'XP Crystal', 'Star Gem']
 
-  const isCompleted = (id) => completedEntities.includes(id)
+  const isCompleted = (id) => completedEntities.includes(`${chapterPrefix}-${id}`)
 
   return (
     <>
@@ -654,6 +654,7 @@ export default function GameWorld() {
             worldData={worldData}
             onEntityInteract={handleEntityInteract}
             completedEntities={completedEntities}
+            chapterPrefix={sessionData?.chapterId || 'default'}
           />
         </Suspense>
       </Canvas>
