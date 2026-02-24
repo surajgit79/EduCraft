@@ -555,11 +555,15 @@ export default function GameWorld() {
     const chapterEntities = ALL_ENTITIES.map(e => `${chapterPrefix}-${e}`)
     const allAttempted = chapterEntities.every(e => attemptedEntities.includes(e))
     
+    console.log('[DEBUG] Checking completion:', { chapterPrefix, chapterEntities, attemptedEntities, allAttempted })
+    
     if (allAttempted) {
       const timeTaken = Math.round((Date.now() - chapterStartTime) / 1000)
       const accuracy = playerStats.totalQuestions > 0 
         ? Math.round((playerStats.correctAnswers / playerStats.totalQuestions) * 100)
         : 0
+      
+      console.log('[DEBUG] Saving completion:', { user_id: user?.uid, sessionData: sessionData, accuracy, score: playerStats.xp })
       
       try {
         const response = await fetch('/api/complete-chapter', {
@@ -581,6 +585,8 @@ export default function GameWorld() {
           })
         })
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+        const result = await response.json()
+        console.log('[DEBUG] Completion saved:', result)
       } catch (error) {
         console.error('Error saving chapter completion:', error)
       }

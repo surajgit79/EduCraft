@@ -20,9 +20,11 @@ export default function StudentDashboard() {
   const loadProgress = async () => {
     try {
       const userId = user?.uid || 'anonymous'
+      console.log('[DEBUG] Loading progress for user:', userId)
       const response = await fetch(`/api/get-progress?user_id=${userId}`)
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
       const data = await response.json()
+      console.log('[DEBUG] Received progress data:', data)
       
       const progress = []
       let totalXP = 0

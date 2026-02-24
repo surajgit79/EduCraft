@@ -287,6 +287,8 @@ def complete_chapter():
     subject = data.get('subject', 'Math')
     grade = data.get('grade', '5')
     
+    print(f"[DEBUG] Saving completion: user_id={user_id}, syllabus_id={syllabus_id}, chapter_id={chapter_id}, mode={mode}, subject={subject}, score={score}, accuracy={accuracy}")
+    
     completion_id = str(uuid.uuid4())
     completion = {
         'id': completion_id,
@@ -306,6 +308,7 @@ def complete_chapter():
     }
     
     key = f"{user_id}_{syllabus_id}_{chapter_id}" if syllabus_id else f"{user_id}_{subject}_default"
+    print(f"[DEBUG] Storage key: {key}")
     chapter_completions[key] = completion
     
     return jsonify({
@@ -319,7 +322,11 @@ def get_progress():
     user_id = request.args.get('user_id', 'anonymous')
     subject = request.args.get('subject')
     
+    print(f"[DEBUG] Getting progress for user_id: {user_id}")
+    print(f"[DEBUG] All completions: {list(chapter_completions.keys())}")
+    
     user_completions = {k: v for k, v in chapter_completions.items() if v.get('user_id') == user_id}
+    print(f"[DEBUG] User completions: {list(user_completions.keys())}")
     
     if subject:
         subject_completions = {k: v for k, v in user_completions.items() if v.get('subject') == subject}
@@ -338,7 +345,9 @@ def get_progress():
                 'chapter_id': comp.get('chapter_id'),
                 'chapter_title': comp.get('chapter_title'),
                 'accuracy': comp.get('accuracy', 0),
-                'score': comp.get('score', 0)
+                'score': comp.get('score', 0),
+                'correct_answers': comp.get('correct_answers', 0),
+                'total_questions': comp.get('total_questions', 0)
             })
         else:
             key = f"{comp.get('subject')}_{comp.get('grade')}"
@@ -348,10 +357,19 @@ def get_progress():
                     'grade': comp.get('grade'),
                     'total_score': 0,
                     'sessions': 0,
+                    'total_correct': 0,
+                    'total_questions': 0,
                     'accuracy': 0
                 }
             default_progress[key]['total_score'] += comp.get('score', 0)
             default_progress[key]['sessions'] += 1
+            default_progress[key]['total_correct'] += comp.get('correct_answers', 0)
+            default_progress[key]['total_questions'] += comp.get('total_questions', 0)
+            # Calculate accuracy
+            if default_progress[key]['total_questions'] > 0:
+                default_progress[key]['accuracy'] = round(
+                    (default_progress[key]['total_correct'] / default_progress[key]['total_questions']) * 100
+                )
     
     return jsonify({
         'syllabus_progress': syllabus_progress,
